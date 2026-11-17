@@ -57,6 +57,17 @@ dön” zinciri tıklanarak ve ekran görüntüsüyle kontrol edildi. ✅
 | Reduced motion (MediaQueryList.matches simülasyonu) | ✅ kamera hareketi yok, yalnızca 150–180 ms opaklık geçişi |
 | Gizli sahnelerin sekme sırasına sızması | ✅ yok (dış cephede 16, iç mekânda 19 odaklanabilir öğe; hepsi görünür sahnede) |
 
+## 5b. Mobil gezinme güncellemesi (kenar okları + küçük kontroller)
+
+| Kontrol | Sonuç |
+|---|---|
+| 375×812 salon: ekran dışındaki 6 noktadan yalnızca kaydırarak ulaşılabilenler için her kenarda tek ok (“3 nokta”, “Yemek alanı” gibi) | ✅ |
+| Oka dokunma: kamera en yakın noktaya 520 ms'de kayıyor, nokta vurgulanıyor ve odak ona geçiyor; sayılar güncelleniyor | ✅ |
+| Parmakla sürükleme (simüle dokunma olayları) sonrası okların yeniden hesaplanması | ✅ |
+| Dekorasyon modunda oklar gizli; masaüstünde (1440×900) tüm noktalar görünür olduğu için ok çıkmıyor | ✅ |
+| Mobil kontrol boyutları: üst düğmeler 32 px, oda sekmeleri 30 px, açı sekmeleri 28 px, bilgiler düğmesi 34 px, bilgi noktası 30 px; dokunma alanı görünmez genişletmeyle ~40–44 px | ✅ |
+| Mobil dış cephe: küçülen kat panelinin üstünde “Giriş ve lobi” işareti artık görünüyor | ✅ |
+
 ## 6. Performans
 
 Yerleşik tarayıcı paneli görünürken (rAF 16,7 ms) `requestAnimationFrame` kare süreleri ve

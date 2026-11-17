@@ -13,6 +13,7 @@
 - **WhatsApp randevu**: isteğe bağlı ad, tarih (geçmiş tarih engelli), saat aralığı, not, keşif bağlamı (kat/tip/sosyal alan, işaret kaldırılabilir); `encodeURIComponent` ile `wa.me` bağlantısı; onay mesajı gösterilmez.
 - **Erişilebilirlik**: klavye ile tüm akış, görünür odak, native `<dialog>` (Escape, odak geri dönüşü), gizli sahneler `inert`, reduced-motion'da yalnızca kısa opaklık geçişi.
 - **Performans**: tek geçiş yöneticisi (son istek kazanır, çakışma yok), yalnızca transform/opacity animasyonları, boşta rAF yok, aşamalı görsel yükleme. Ölçümler `TEST-RAPORU.md`.
+- **Mobil gezinme (güncelleme)**: ekran dışındaki noktalar için kenar okları (her kenarda tek ok; dokununca en yakın noktaya kayar, nokta vurgulanır) ve mobilde küçültülmüş kontroller (dokunma alanı korunarak).
 - **Testler**: 22 birim testi (`npm test`), derleme sonrası bağlantı/asset denetimi (`npm run check:links`).
 
 ## Kullanılan varsayımlar (doğrulanması gerekenler)
@@ -29,7 +30,8 @@
 - B tipi için ayrı ebeveyn odası / ikinci oda / banyo renderları yok (ortak örnek gösteriliyor).
 - Doğrulanmış mimari kat planı yok (temsili şema var).
 - Farklı model koltuk ve diğer odalar için dekorasyon görselleri yok.
-- Dikey telefonda podyumdaki sosyal alan işaretleri alt kat panelinin arkasında kalıyor; bu alanlara “Sosyal olanaklar” düğmesi ve sahnedeki grup sekmeleriyle erişiliyor.
+- Dikey telefonda kat paneli küçüldü; “Giriş ve lobi” görünür, ancak otopark ve teras işaretleri hâlâ panelin arkasında. Bu alanlara “Sosyal olanaklar” düğmesi ve sahnedeki grup sekmeleriyle erişiliyor.
+- Kenar okları yalnızca iç mekânda; dış cephede görsel ekran yüksekliğine tam sığdığı için dikey kaydırma yok, bu yüzden panel arkasındaki noktalara ok gösterilmiyor.
 - Gerçek iOS/Safari ve Android cihaz testleri yapılmadı (yalnızca Chromium tabanlı uygulama içi tarayıcıda emülasyon).
 - Referans video, bir sosyal medya gönderisinin düşük çözünürlüklü ekran kaydı; gömülü demonun hareketi örneklenen karelerde net seçilemedi. Hareket kurgusu promptta tarif edilen akışa göre yapıldı.
 

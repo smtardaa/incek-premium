@@ -182,7 +182,7 @@ export const apartmentTypes = [
               { kind: 'info', x: 0.96, y: 0.3, title: 'Fon perde', text: 'Pencere kenarındaki fon perde. Rengini “Dekorasyon” panelinden örnek seçeneklerle değiştirebilirsiniz.' },
               { kind: 'zoom', x: 0.78, y: 0.72, label: 'Oturma grubuna yaklaş', rect: { x: 0.52, y: 0.5, w: 0.48, h: 0.48 } },
               { kind: 'info', x: 0.3, y: 0.72, title: 'Yemek alanı', text: 'Kapalı mutfaklı tipte yemek masası salonun içinde, oturma grubunun yanında konumlanıyor.' },
-              { ...CEILING, x: 0.6, y: 0.08 },
+              { ...CEILING, x: 0.72, y: 0.15 },
               { kind: 'go', x: 0.2, y: 0.46, label: 'TV duvarı', to: { room: 'salon', view: 'tv' } }
             ]
           },

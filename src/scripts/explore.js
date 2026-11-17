@@ -93,7 +93,7 @@ export function initExplore() {
       const vp = document.createElement('div'); vp.className = 'viewport';
       const st = document.createElement('div'); st.className = 'stage';
       vp.appendChild(st); b.appendChild(vp); this.container.appendChild(b);
-      const stage = new Stage(vp, st, this.w, this.h, { maxZoom: 2.4 });
+      const stage = new Stage(vp, st, this.w, this.h, { maxZoom: 2.4, onMove: () => this.onMove && this.onMove() });
       return { el: b, vp, st, stage, spec: null };
     }
     back() { return this.buffers.find((b) => b !== this.front); }
@@ -172,6 +172,7 @@ export function initExplore() {
     session.set('incek-baglam', JSON.stringify({ floor: to.floor ?? null, typeTitle: typeTitle || null, amenity: amItem || null }));
     updateChrome(to);
     setEnterBusy(false);
+    invalidateEdges();
   }
 
   // ——— Geçişler ———
@@ -351,6 +352,9 @@ export function initExplore() {
     b.className = `hs hs-${h.kind}`;
     b.style.left = h.x * 100 + '%';
     b.style.top = h.y * 100 + '%';
+    b.dataset.x = String(h.x);
+    b.dataset.y = String(h.y);
+    b.dataset.label = h.kind === 'info' ? h.title : h.label;
     if (h.kind === 'info') {
       b.innerHTML = `<span class="hs-ring">${ICON.info}</span><span class="hs-tip"></span>`;
       b.querySelector('.hs-tip').textContent = h.title;
@@ -419,6 +423,107 @@ export function initExplore() {
   }
 
   function afterInteriorShown() {
+    invalidateEdges();
+  }
+
+  // ——— Kenar okları: ekran dışında kalan bilgi/geçiş noktalarını gösterir ———
+  // Yalnızca kaydırarak ulaşılabilen noktalar için ok çizilir; oka dokununca kamera o noktaya kayar.
+  const edgeLayer = document.createElement('div');
+  edgeLayer.className = 'edge-layer';
+  edgeLayer.setAttribute('role', 'group');
+  edgeLayer.setAttribute('aria-label', 'Ekran dışındaki noktalar');
+  el.int.appendChild(edgeLayer);
+  let edgeRect = null;
+  let edgeRaf = 0;
+  let edgeKey = '';
+  interior.onMove = () => scheduleEdges();
+  function invalidateEdges() { edgeRect = null; scheduleEdges(); }
+  function scheduleEdges() {
+    if (edgeRaf) return;
+    edgeRaf = requestAnimationFrame(() => { edgeRaf = 0; updateEdges(); });
+  }
+  /** Görselin kontrollerle örtülmeyen, gerçekten görünen alanı (ekran koordinatı). */
+  function visibleRect() {
+    if (edgeRect) return edgeRect;
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const nav = $('.room-nav', el.int).getBoundingClientRect();
+    const dock = $('.int-dock', el.int).getBoundingClientRect();
+    const cta = el.infoCta.getBoundingClientRect();
+    let right = vw, bottom = Math.min(dock.top, cta.top, vh);
+    if (openPanel) {
+      const pr = panels[openPanel].getBoundingClientRect();
+      if (pr.left > vw * 0.35) right = pr.left; else bottom = Math.min(bottom, pr.top);
+    }
+    edgeRect = { left: 0, top: nav.bottom, right, bottom };
+    return edgeRect;
+  }
+  function updateEdges() {
+    const f = interior.front;
+    if (!f || state.scene !== 'interior' || decorMode || tm.running) { if (edgeKey) { edgeLayer.replaceChildren(); edgeKey = ''; } return; }
+    const R = visibleRect();
+    const M = 14; // kenar payı
+    const st = f.stage;
+    const vpr = f.vp.getBoundingClientRect();
+    const s = st.s0 * st.v.z;
+    const items = [];
+    for (const hs of f.st.querySelectorAll('.hs')) {
+      const X = Number(hs.dataset.x) * st.w, Y = Number(hs.dataset.y) * st.h;
+      const p = st.toScreen(X, Y);
+      const x = vpr.left + p.x, y = vpr.top + p.y;
+      if (x >= R.left + M && x <= R.right - M && y >= R.top + M && y <= R.bottom - M) continue; // görünüyor
+      // Ulaşılabilir mi? Nokta merkeze alınmaya çalışıldığında görünür alana giriyorsa evet.
+      const c = st.clamp({ cx: X, cy: Y, z: st.v.z });
+      const ax = vpr.left + st.vw / 2 + (X - c.cx) * s, ay = vpr.top + st.vh / 2 + (Y - c.cy) * s;
+      if (!(ax >= R.left + M && ax <= R.right - M && ay >= R.top + M && ay <= R.bottom - M)) continue;
+      const left = x < R.left + M, right = x > R.right - M;
+      const side = left ? 'left' : right ? 'right' : (y < R.top + M ? 'top' : 'bottom');
+      const ex = Math.min(Math.max(x, R.left + 22), R.right - 22);
+      const ey = Math.min(Math.max(y, R.top + 22), R.bottom - 22);
+      items.push({ hs, X, Y, side, ex, ey });
+    }
+    // Her kenarda tek ok: kenardaki noktalar gruplanır, ok en yakın noktaya götürür (kalabalığı önler)
+    const groups = [];
+    for (const sd of ['left', 'right', 'top', 'bottom']) {
+      const list = items.filter((i) => i.side === sd);
+      if (!list.length) continue;
+      const cx = st.v.cx, cy = st.v.cy;
+      list.sort((p, q) => Math.hypot(p.X - cx, p.Y - cy) - Math.hypot(q.X - cx, q.Y - cy));
+      const near = list[0];
+      const ey = sd === 'left' || sd === 'right' ? list.reduce((s, i) => s + i.ey, 0) / list.length : near.ey;
+      groups.push({ ...near, ey, count: list.length });
+    }
+    const key = groups.map((i) => `${i.hs.dataset.label}|${i.side}|${i.count}|${Math.round(i.ex / 8)}|${Math.round(i.ey / 8)}`).join(';');
+    if (key === edgeKey) return;
+    edgeKey = key;
+    edgeLayer.replaceChildren(...groups.map((i) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'edge-arrow edge-' + i.side;
+      const label = i.hs.dataset.label || 'Nokta';
+      const text = i.count > 1 ? i.count + ' nokta' : (label.length > 16 ? label.slice(0, 15) + '…' : label);
+      btn.setAttribute('aria-label', i.count > 1 ? `Bu yönde ekran dışında ${i.count} nokta; en yakını: ${label}` : `Ekran dışında: ${label} — oraya kaydır`);
+      btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span></span>';
+      btn.querySelector('span').textContent = text;
+      if (i.side === 'left') { btn.style.left = (R.left + 8) + 'px'; btn.style.top = i.ey + 'px'; }
+      else if (i.side === 'right') { btn.style.right = (window.innerWidth - R.right + 8) + 'px'; btn.style.top = i.ey + 'px'; }
+      else { btn.style.left = i.ex + 'px'; btn.style.top = (i.side === 'top' ? R.top + 8 : R.bottom - 8) + 'px'; }
+      btn.addEventListener('click', () => panToHotspot(i.hs, i.X, i.Y));
+      return btn;
+    }));
+  }
+  function panToHotspot(hs, X, Y) {
+    const f = interior.front;
+    if (!f || tm.running) return;
+    el.int.classList.add('is-moving');
+    const a = f.stage.animateTo({ cx: X, cy: Y, z: f.stage.v.z }, { duration: reduceMotion.matches ? 0 : 520, easing: EASE_IO });
+    settle(a).then(() => {
+      el.int.classList.remove('is-moving');
+      if (!hs.isConnected) return;
+      hs.classList.add('hs-pulse');
+      setTimeout(() => hs.classList.remove('hs-pulse'), 1700);
+      hs.focus({ preventScroll: true });
+      scheduleEdges();
+    });
   }
 
   // ——— Paneller (tek seferde bir panel) ———
@@ -431,6 +536,7 @@ export function initExplore() {
     panelOpener = opener;
     if (toggles[id]) toggles[id].setAttribute('aria-expanded', 'true');
     root.classList.add('sheet-open');
+    invalidateEdges();
     if (id === 'decor') decorLayout(true);
     if (focus) requestAnimationFrame(() => $('[data-close-panel]', panels[id])?.focus({ preventScroll: true }));
   }
@@ -443,6 +549,7 @@ export function initExplore() {
     $$('.hs-info[aria-expanded="true"]', el.int).forEach((b) => b.setAttribute('aria-expanded', 'false'));
     openPanel = null;
     root.classList.remove('sheet-open');
+    invalidateEdges();
     if (restoreFocus && panelOpener && panelOpener.isConnected) panelOpener.focus({ preventScroll: true });
     panelOpener = null;
   }
@@ -756,6 +863,7 @@ export function initExplore() {
       rz = 0;
       ext.resize();
       if (decorMode) decorLayout(true); else interior.resize();
+      invalidateEdges();
       amenity.resize();
       hideFloorTip();
     });
