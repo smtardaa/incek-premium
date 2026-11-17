@@ -1,0 +1,16 @@
+/* Kaynak: https://incekpremium.com/assets/css/style.css ve ana sayfa inline CSS. Kontrol: 2026-11-17. Bu dosya kaynak renklerinin kaydıdır, yeni tasarım kararı değildir. */
+:root {
+  --incek-green: #0b533d;
+  --incek-green-dark: #0a4634;
+  --incek-green-border: #062f22;
+  --incek-green-hover: #19775a;
+  --incek-gold: #997536;
+  --incek-cream: #f7f5ef;
+  --incek-heading: #1c1c25;
+  --incek-dark: #20202a;
+  --incek-white: #ffffff;
+  --incek-text-muted: #797e88;
+  --incek-border: #d8dde1;
+  --incek-heading-font: "Cal Sans", sans-serif;
+  --incek-body-font: "Plus Jakarta Sans", sans-serif;
+}

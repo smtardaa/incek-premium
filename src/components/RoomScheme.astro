@@ -1,0 +1,40 @@
+---
+/**
+ * Temsili oda şeması — MİMARİ KAT PLANI DEĞİLDİR. Ölçü, alan ve yön bilgisi içermez.
+ * Odalara tıklayınca görsel keşifte ilgili oda açılır.
+ */
+import { withBase } from '../lib/url.js';
+interface Props { type: any; }
+const { type } = Astro.props;
+const s = type.scheme;
+const K = 6; // birim → px
+const rooms = [
+  { id: 'salon', label: 'Salon', r: s.salon, link: true },
+  { id: 'mutfak', label: type.id === 'acik' ? 'Açık mutfak' : 'Kapalı mutfak', r: s.mutfak, link: true },
+  { id: 'hol', label: 'Hol', r: s.hol, link: false },
+  { id: 'banyo', label: 'Banyo', r: s.banyo, link: true },
+  { id: 'ebeveyn', label: 'Ebeveyn odası', r: s.ebeveyn, link: true },
+  { id: 'ikinci', label: 'İkinci oda', r: s.ikinci, link: true }
+];
+const href = (room: string) => withBase(`?s=daire&tip=${type.id}&oda=${room}`);
+const W = 100 * K, H = 70 * K;
+---
+<figure class="scheme">
+  <svg viewBox={`-4 -4 ${W + 8} ${H + 8}`} role="img" aria-labelledby={`scheme-${type.id}-t`}>
+    <title id={`scheme-${type.id}-t`}>{type.title} için temsili oda şeması (mimari plan değildir)</title>
+    {rooms.map((x) => {
+      const rect = <rect x={x.r.x * K} y={x.r.y * K} width={x.r.w * K} height={x.r.h * K} rx="6" class={`sch-room sch-${x.id}`} />;
+      const text = <text x={(x.r.x + x.r.w / 2) * K} y={(x.r.y + x.r.h / 2) * K} class="sch-label" text-anchor="middle" dominant-baseline="middle">{x.label}</text>;
+      return x.link
+        ? <a href={href(x.id)} class="sch-link" aria-label={`${x.label} — görsel keşifte aç`}>{rect}{text}</a>
+        : <g>{rect}{text}</g>;
+    })}
+    {s.openKitchen
+      ? <line x1={s.mutfak.x * K} y1={s.mutfak.y * K + 6} x2={s.mutfak.x * K} y2={(s.mutfak.y + s.mutfak.h) * K - 6} class="sch-open" />
+      : <g><line x1={s.mutfak.x * K} y1={s.mutfak.y * K} x2={s.mutfak.x * K} y2={(s.mutfak.y + s.mutfak.h) * K} class="sch-wall" /><rect x={s.mutfak.x * K - 4} y={(s.mutfak.y + s.mutfak.h) * K - 54} width="8" height="40" class="sch-door" /></g>}
+  </svg>
+  <figcaption class="fine">
+    {s.openKitchen ? 'Kesikli çizgi: salon ile mutfak arasında duvar yok (açık plan).' : 'Kalın çizgi ve kapı boşluğu: mutfak salondan ayrı bir oda.'}
+    <strong> Temsili oda şeması — mimari kat planı değildir.</strong> Oda konumları, oranları ve ölçüler gerçeği yansıtmaz.
+  </figcaption>
+</figure>

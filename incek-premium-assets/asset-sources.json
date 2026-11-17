@@ -1,0 +1,64 @@
+{
+  "checkedAt": "2026-11-17",
+  "assets": [
+    {
+      "source": "https://incekpremium.com/assets/images/logo.png",
+      "file": "brand/incek-premium-logo.png",
+      "bytes": 40587,
+      "mimeType": "image/png"
+    },
+    {
+      "source": "https://incekpremium.com/assets/images/vertisa-logo.png",
+      "file": "brand/vertisa-logo.png",
+      "bytes": 14371,
+      "mimeType": "image/png"
+    },
+    {
+      "source": "https://incekpremium.com/assets/images/favicon.png",
+      "file": "brand/favicon.png",
+      "bytes": 7894,
+      "mimeType": "image/png"
+    },
+    {
+      "source": "https://incekpremium.com/storage/pages/a-tipi-acik-mutfak01.jpg",
+      "file": "reference/a-tipi-acik-mutfak01.jpg",
+      "bytes": 88113,
+      "mimeType": "image/jpeg"
+    },
+    {
+      "source": "https://incekpremium.com/storage/pages/a-tipi-acik-mutfak02.jpg",
+      "file": "reference/a-tipi-acik-mutfak02.jpg",
+      "bytes": 86749,
+      "mimeType": "image/jpeg"
+    },
+    {
+      "source": "https://incekpremium.com/storage/pages/b-tipi-kapali-mutfak01.jpg",
+      "file": "reference/b-tipi-kapali-mutfak01.jpg",
+      "bytes": 158047,
+      "mimeType": "image/jpeg"
+    },
+    {
+      "source": "https://incekpremium.com/storage/pages/incek-premium-vaziyet-plan.webp",
+      "file": "reference/vaziyet-plani.webp",
+      "bytes": 190710,
+      "mimeType": "image/webp"
+    },
+    {
+      "source": "https://incekpremium.com/storage/pages/a-tipi-salon-3.jpg",
+      "file": "reference/a-tipi-salon.jpg",
+      "bytes": 916521,
+      "mimeType": "image/jpeg"
+    },
+    {
+      "source": "https://incekpremium.com/storage/pages/b-tipi-salon-1.jpg",
+      "file": "reference/b-tipi-salon.jpg",
+      "bytes": 527317,
+      "mimeType": "image/jpeg"
+    }
+  ],
+  "notes": [
+    "b-tipi-kapali-mutfak01.jpg dosyasının içeriği dış mekân/peyzajdır; dosya adına göre daire görseli olarak kullanma.",
+    "vaziyet-plani.webp arsa yerleşim görselidir; kat planı değildir.",
+    "Yeni görsel veya Claude promptu oluşturulmadı."
+  ]
+}

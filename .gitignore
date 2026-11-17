@@ -1,0 +1,7 @@
+node_modules/
+dist/
+dist-sub/
+.astro/
+scratch/
+*.log
+.DS_Store

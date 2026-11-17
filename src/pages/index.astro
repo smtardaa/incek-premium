@@ -1,0 +1,294 @@
+---
+import Base from '../layouts/Base.astro';
+import AppointmentDialog from '../components/AppointmentDialog.astro';
+import { project } from '../data/project.js';
+import { assetSources, getAsset } from '../data/assets.js';
+import { lines, facade, silhouette, floorNumberTop, exteriorHotspots, exteriorFocus, exteriorImage } from '../data/exterior.js';
+import { buildFloors, pointsAttr } from '../lib/geometry.js';
+import { apartmentTypes, roomOrder, roomLabels } from '../data/apartments.js';
+import { amenityGroups, amenityItems } from '../data/amenities.js';
+import { curtains, sofas, packages, defaultDecor, decorLayerPath } from '../data/decor.js';
+import { withBase } from '../lib/url.js';
+import '../styles/explore.css';
+
+const B = (p: string) => withBase(p);
+const ext = assetSources(exteriorImage.id);
+const floors = buildFloors(lines, facade, floorNumberTop);
+const src = (id: string) => { const s = assetSources(id); return { small: B(s.small), large: B(s.large), smallW: s.smallW, largeW: s.largeW, w: s.w, h: s.h, alt: getAsset(id).alt }; };
+
+const layers: Record<string, any> = {};
+for (const t of apartmentTypes) {
+  layers[t.id] = { curtain: {}, sofa: {} };
+  for (const c of curtains) { const p = decorLayerPath(t.id, 'curtain', c.id); if (p) layers[t.id].curtain[c.id] = B(p); }
+  for (const s of sofas) { const p = decorLayerPath(t.id, 'sofa', s.id); if (p) layers[t.id].sofa[s.id] = B(p); }
+}
+
+const clientData = {
+  base: import.meta.env.BASE_URL,
+  infoUrl: B('bilgiler/'),
+  exterior: {
+    ...src(exteriorImage.id),
+    focus: exteriorFocus,
+    floors: floors.map((f) => ({ number: f.number, target: f.target, bbox: f.bbox })),
+    hotspots: exteriorHotspots.map((h) => ({ id: h.id, amenity: h.amenity, anchor: h.anchor, label: h.label }))
+  },
+  roomOrder,
+  types: apartmentTypes.map((t) => ({
+    id: t.id, code: t.code, title: t.title, short: t.short, summary: t.summary, kitchenNote: t.kitchenNote,
+    rooms: Object.fromEntries(roomOrder.map((r) => {
+      const room = (t.rooms as any)[r];
+      return [r, {
+        label: roomLabels[r as keyof typeof roomLabels], intro: room.intro, shared: room.shared || null, decor: room.decor || null,
+        views: room.views.map((v: any) => ({ id: v.id, label: v.label, focus: v.focus, hotspots: v.hotspots, img: src(v.asset) }))
+      }];
+    }))
+  })),
+  amenities: {
+    groups: amenityGroups,
+    items: Object.fromEntries(Object.entries(amenityItems).map(([k, v]) => [k, { ...v, img: src(v.asset) }]))
+  },
+  decor: { curtains, sofas, packages, defaults: defaultDecor, layers }
+};
+const safeJson = JSON.stringify(clientData).replace(/</g, String.fromCharCode(92) + "u003c");
+const iconInfo = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v6M12 7.5v.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
+---
+<Base bodyClass="explore-body">
+  <a class="skip-link" href="#explore-main">İçeriğe geç</a>
+  <div class="explore" id="explore" data-scene="intro">
+    <!-- Üst çubuk -->
+    <header class="xbar">
+      <div class="xbar-left">
+        <button type="button" class="xbtn" data-action="back" hidden>
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span data-back-label>Geri</span>
+        </button>
+        <a class="xbrand" href={B('')} aria-label="İncek Premium — başlangıç">
+          <img src={B('brand/incek-premium-logo.png')} alt="" width="427" height="551" />
+        </a>
+        <p class="xcrumb" data-crumb aria-live="polite"></p>
+      </div>
+      <div class="xbar-right">
+        <a class="xbtn xbtn-text hide-sm" href={B('bilgiler/')}>Proje bilgileri</a>
+        <button type="button" class="xbtn xbtn-solid" data-open-appointment>
+          <span class="hide-xs">Randevu talep et</span><span class="show-xs">Randevu</span>
+        </button>
+      </div>
+    </header>
+
+    <main id="explore-main" class="xmain" tabindex="-1">
+      <!-- DIŞ CEPHE / KAT SEÇİMİ -->
+      <section class="scene scene-exterior is-active" id="scene-exterior" aria-label="Dış cephe ve kat seçimi">
+        <div class="viewport" data-viewport>
+          <div class="stage" data-stage style={`width:${ext.w}px;height:${ext.h}px`}>
+            <img class="stage-img" src={B(ext.large)}
+              srcset={`${B(ext.small)} ${ext.smallW}w, ${B(ext.large)} ${ext.largeW}w`}
+              sizes="(min-aspect-ratio: 16/9) 100vw, 178vh"
+              width={ext.w} height={ext.h} alt={getAsset(exteriorImage.id).alt} fetchpriority="high" decoding="async" />
+            <svg class="ext-svg" viewBox={`0 0 ${ext.w} ${ext.h}`} aria-hidden="true" focusable="false">
+              <defs><clipPath id="tower-clip"><polygon points={pointsAttr(silhouette as any)} /></clipPath></defs>
+              <g class="amenity-areas">
+                {exteriorHotspots.map((h) => <polygon class="amenity-area" data-amenity-area={h.id} points={pointsAttr(h.points as any)} />)}
+              </g>
+              <g class="floor-layer" clip-path="url(#tower-clip)">
+                {floors.map((f) => <polygon class="floor" data-floor={f.number} points={pointsAttr(f.points as any)} />)}
+              </g>
+            </svg>
+            {exteriorHotspots.map((h) => (
+              <button type="button" class="hs hs-amenity" data-amenity={h.amenity} data-amenity-hs={h.id}
+                style={`left:${(h.anchor[0] / ext.w) * 100}%;top:${(h.anchor[1] / ext.h) * 100}%`}>
+                <span class="hs-dot" aria-hidden="true"></span><span class="hs-label">{h.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div class="floor-tip" data-floor-tip aria-hidden="true"></div>
+
+        <aside class="floor-panel on-light" aria-labelledby="floor-panel-title" data-floor-panel>
+          <div class="fp-head">
+            <p class="eyebrow">Temsili kat eşleştirmesi</p>
+            <h2 id="floor-panel-title" class="fp-title"><span data-floor-title>Bir kat seçin</span></h2>
+            <p class="fine fp-hint" data-floor-hint>Binanın üzerindeki bir kata dokunun veya aşağıdan seçin.</p>
+          </div>
+          <div class="fp-stepper">
+            <button type="button" class="icon-btn" data-floor-step="1" aria-label="Bir üst kat">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <label class="visually-hidden" for="floor-select">Kat seçin</label>
+            <select id="floor-select" class="input fp-select" data-floor-select>
+              <option value="">Kat seçin</option>
+              {floors.map((f) => <option value={f.number}>{f.number}. kat</option>)}
+            </select>
+            <button type="button" class="icon-btn" data-floor-step="-1" aria-label="Bir alt kat">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+          <fieldset class="fp-types" data-type-choice disabled>
+            <legend class="fp-legend">Örnek 2+1 daire tipi</legend>
+            {apartmentTypes.map((t, i) => (
+              <label class="type-card">
+                <input type="radio" name="apt-type" value={t.id} checked={i === 0} />
+                <span class="type-card-body">
+                  <span class="type-card-title">{t.title}</span>
+                  <span class="type-card-text">{t.id === 'acik' ? 'Mutfak salonla aynı hacimde' : 'Mutfak ayrı bir oda'}</span>
+                </span>
+              </label>
+            ))}
+          </fieldset>
+          <button type="button" class="btn btn-primary fp-cta" data-action="enter" disabled>
+            <span data-enter-label>Daireyi keşfet</span>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <p class="fine fp-note">Seçilen kat için <strong>örnek</strong> daire gösterilir; kesin envanter, daire numarası veya cephe eşleşmesi değildir.</p>
+        </aside>
+
+        <div class="ext-tools">
+          <button type="button" class="btn btn-light btn-sm" data-amenity-hub>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M6 20V9l6-5 6 5v11M10 20v-5h4v5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+            Sosyal olanaklar
+          </button>
+        </div>
+      </section>
+
+      <!-- AÇILIŞ -->
+      <section class="scene-intro on-dark" id="scene-intro" aria-labelledby="intro-title">
+        <div class="intro-inner">
+          <img class="intro-logo" src={B('brand/incek-premium-logo.png')} alt="İncek Premium" width="427" height="551" />
+          <h1 id="intro-title" class="visually-hidden">İncek Premium</h1>
+          <p class="intro-lead">İncek’te 30 katlı kule. 300 konut, açık ve kapalı mutfaklı 2+1 seçenekler.</p>
+          <button type="button" class="btn btn-gold intro-cta" data-action="start">
+            Projeyi keşfet
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <a class="intro-text-link" href={B('bilgiler/')}>Yazılı bilgileri okuyun</a>
+        </div>
+        <p class="intro-foot"><img src={B('brand/vertisa-logo.png')} alt="Vertisa" width="500" height="47" /><span>Açık beta · tanıtım amaçlı konsept sunum</span></p>
+      </section>
+
+      <!-- İÇ MEKÂN -->
+      <section class="scene scene-interior" id="scene-interior" aria-label="Örnek daire keşfi" hidden inert>
+        <nav class="room-nav" aria-label="Odalar">
+          <ul class="room-list" data-room-list>
+            {roomOrder.map((r) => <li><button type="button" class="chip" data-room={r}>{roomLabels[r as keyof typeof roomLabels]}</button></li>)}
+          </ul>
+        </nav>
+        <div class="int-dock">
+          <div class="view-tabs" data-view-tabs role="group" aria-label="Kamera açıları"></div>
+          <div class="int-actions">
+            <button type="button" class="btn btn-light btn-sm" data-action="info-toggle" aria-expanded="false" aria-controls="room-info">
+              <Fragment set:html={iconInfo} /> Oda bilgisi
+            </button>
+            <button type="button" class="btn btn-light btn-sm" data-action="decor-toggle" aria-expanded="false" aria-controls="decor-panel" hidden>
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.6-.9 1.3-1.8-.4-1.2.5-2.2 1.7-2.2H17a4 4 0 0 0 4-4c0-5.5-4-10-9-10Z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="7.5" cy="11" r="1.3" fill="currentColor"/><circle cx="10.5" cy="7" r="1.3" fill="currentColor"/><circle cx="15" cy="7.5" r="1.3" fill="currentColor"/></svg>
+              Dekorasyon
+            </button>
+          </div>
+        </div>
+        <div class="buffers" data-buffers></div>
+        <button type="button" class="btn btn-ghost-dark btn-sm zoom-out" data-action="zoom-out" hidden>
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 11h6M16 16l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Oda geneline dön
+        </button>
+
+        <aside class="panel room-info on-light" id="room-info" aria-labelledby="room-info-title" hidden>
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow" data-room-eyebrow></p>
+              <h2 class="panel-title" id="room-info-title" data-room-title></h2>
+            </div>
+            <button type="button" class="icon-btn" data-close-panel aria-label="Oda bilgisini kapat">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+          <p data-room-intro></p>
+          <p class="kitchen-note" data-kitchen-note hidden></p>
+          <p class="fine" data-room-shared hidden></p>
+          <p class="fine">Görseller resmî proje renderlarıdır. Bu daire bir <strong>örnektir</strong>; seçilen katın kesin envanteri değildir.</p>
+        </aside>
+
+        <aside class="panel decor-panel on-light" id="decor-panel" aria-labelledby="decor-title" hidden>
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Salon · örnek dekorasyon</p>
+              <h2 class="panel-title" id="decor-title">Dekorasyon</h2>
+            </div>
+            <button type="button" class="icon-btn" data-close-panel aria-label="Dekorasyon panelini kapat">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+          <fieldset class="decor-group">
+            <legend>Hazır paket</legend>
+            <div class="seg" data-decor-packages>
+              {packages.map((p) => <label class="seg-opt"><input type="radio" name="decor-package" value={p.id} /><span>{p.label}</span></label>)}
+              <label class="seg-opt seg-custom"><input type="radio" name="decor-package" value="ozel" disabled /><span>Özel</span></label>
+            </div>
+            <p class="fine decor-pkg-desc" data-decor-desc aria-live="polite"></p>
+          </fieldset>
+          <fieldset class="decor-group">
+            <legend>Perde rengi</legend>
+            <div class="swatches" data-decor-curtains>
+              {curtains.map((c) => <label class="swatch"><input type="radio" name="decor-curtain" value={c.id} /><span class="swatch-chip" style={`--sw:${c.swatch}`}></span><span class="swatch-label">{c.label}</span></label>)}
+            </div>
+          </fieldset>
+          <fieldset class="decor-group">
+            <legend>Koltuk</legend>
+            <div class="swatches" data-decor-sofas>
+              {sofas.map((s) => <label class="swatch"><input type="radio" name="decor-sofa" value={s.id} /><span class="swatch-chip" style={`--sw:${s.swatch}`}></span><span class="swatch-label">{s.label}</span></label>)}
+            </div>
+          </fieldset>
+          <div class="decor-foot">
+            <button type="button" class="btn btn-outline btn-sm" data-decor-reset>Varsayılana dön</button>
+            <span class="decor-loading fine" data-decor-loading hidden>Yükleniyor…</span>
+          </div>
+          <p class="fine">Konsept seçenektir; firmanın satış paketi veya teslim taahhüdü değildir. Seçenekler resmî salon render’ı üzerinde yalnızca perde ve koltuk yüzeyi yeniden renklendirilerek hazırlanmıştır.</p>
+        </aside>
+
+        <aside class="panel hs-card on-light" data-hs-card role="region" aria-labelledby="hs-card-title" hidden>
+          <div class="panel-head">
+            <h2 class="panel-title" id="hs-card-title" data-hs-title></h2>
+            <button type="button" class="icon-btn" data-close-panel aria-label="Bilgi kartını kapat">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+          <p data-hs-text></p>
+        </aside>
+      </section>
+
+      <!-- SOSYAL OLANAK -->
+      <section class="scene scene-amenity" id="scene-amenity" aria-label="Sosyal olanaklar" hidden inert>
+        <div class="buffers" data-buffers></div>
+        <aside class="panel am-card on-light" aria-labelledby="am-title">
+          <div class="am-groups" role="group" aria-label="Olanak grupları" data-am-groups></div>
+          <p class="eyebrow" data-am-group></p>
+          <div class="am-tabs" role="group" aria-label="Bu gruptaki alanlar" data-am-tabs></div>
+          <h2 class="panel-title am-title" id="am-title" data-am-title></h2>
+          <p data-am-text></p>
+          <p class="fine" data-am-note hidden></p>
+          <p class="fine am-source">Kaynak: <span data-am-source></span> · Projede planlanan olanaklardır; görseller temsilîdir.</p>
+          <div class="am-actions">
+            <button type="button" class="btn btn-primary btn-sm" data-open-appointment data-am-appt>Randevu talep et</button>
+            <button type="button" class="btn btn-outline btn-sm" data-action="back-to-building">Binaya dön</button>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <a class="info-cta" href={B('bilgiler/')} data-info-cta>
+      Tüm bilgileri incele
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+    <div class="toast" role="status" aria-live="polite" data-toast hidden></div>
+  </div>
+
+  <noscript>
+    <div class="noscript-note">
+      <p>Görsel keşif için JavaScript gereklidir. Proje bilgilerinin tamamını <a href={B('bilgiler/')}>yazılı bilgiler sayfasında</a> okuyabilirsiniz.</p>
+    </div>
+  </noscript>
+
+  <AppointmentDialog />
+  <script type="application/json" id="explore-data" set:html={safeJson} />
+  <script>
+    import { initExplore } from '../scripts/explore.js';
+    initExplore();
+  </script>
+</Base>

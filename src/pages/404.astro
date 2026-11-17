@@ -1,0 +1,18 @@
+---
+import Base from '../layouts/Base.astro';
+import { withBase } from '../lib/url.js';
+import '../styles/info.css';
+---
+<Base title="Sayfa bulunamadı · İncek Premium" bodyClass="info-body">
+  <main class="section">
+    <div class="wrap" style="text-align:center;display:grid;justify-items:center;gap:12px">
+      <img src={withBase('brand/incek-premium-logo.png')} alt="İncek Premium" width="427" height="551" style="height:160px;width:auto" />
+      <h1>Sayfa bulunamadı</h1>
+      <p>Aradığınız sayfa taşınmış veya hiç var olmamış olabilir.</p>
+      <p style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+        <a class="btn btn-primary" href={withBase('')}>Görsel keşfe git</a>
+        <a class="btn btn-outline" href={withBase('bilgiler/')}>Proje bilgileri</a>
+      </p>
+    </div>
+  </main>
+</Base>

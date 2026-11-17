@@ -1,0 +1,262 @@
+---
+import Base from '../../layouts/Base.astro';
+import AppointmentDialog from '../../components/AppointmentDialog.astro';
+import RoomScheme from '../../components/RoomScheme.astro';
+import { project } from '../../data/project.js';
+import { assetSources, getAsset } from '../../data/assets.js';
+import { apartmentTypes } from '../../data/apartments.js';
+import { amenityItems, amenityGroups, officialPrivileges } from '../../data/amenities.js';
+import { galleryCategories, galleryItems } from '../../data/gallery.js';
+import { withBase } from '../../lib/url.js';
+import '../../styles/info.css';
+
+const B = (p: string) => withBase(p);
+const img = (id: string, prefer: 'small' | 'large' = 'small') => { const s = assetSources(id); return { src: B(prefer === 'small' ? s.small : s.large), w: s.w, h: s.h, alt: getAsset(id).alt, small: B(s.small), large: B(s.large), smallW: s.smallW, largeW: s.largeW }; };
+const hero = img('dis-ana', 'large');
+const heroSmall = assetSources('dis-ana');
+const groupOf = (itemId: string) => amenityGroups.find((g) => g.id !== 'hizmetler' && g.items.includes(itemId)) || amenityGroups.find((g) => g.items.includes(itemId));
+const nav = [
+  ['proje', 'Proje'], ['daire-tipleri', 'Daire tipleri'], ['kat-planlari', 'Oda şemaları'], ['olanaklar', 'Olanaklar'],
+  ['galeri', 'Galeri'], ['konum', 'Konum'], ['iletisim', 'İletişim']
+];
+const typeCover: Record<string, string> = { acik: 'a-salon-oturma', kapali: 'b-salon-oturma' };
+const typeKitchen: Record<string, string> = { acik: 'a-mutfak', kapali: 'b-mutfak' };
+---
+<Base title="Proje bilgileri · İncek Premium" description="İncek Premium proje bilgileri: 30 kat, 300 konut, açık ve kapalı mutfaklı 2+1 daire tipleri, sosyal olanaklar, galeri, konum ve iletişim." bodyClass="info-body">
+  <a class="skip-link" href="#icerik">İçeriğe geç</a>
+  <header class="site-head">
+    <div class="wrap head-inner">
+      <a class="head-brand" href={B('')} aria-label="İncek Premium — görsel keşif">
+        <img src={B('brand/incek-premium-logo.png')} alt="" width="427" height="551" />
+        <span class="head-name">İncek Premium</span>
+      </a>
+      <nav class="head-nav" aria-label="Bölümler">
+        <ul>{nav.map(([id, label]) => <li><a href={`#${id}`}>{label}</a></li>)}</ul>
+      </nav>
+      <div class="head-actions">
+        <a class="btn btn-outline btn-sm" href={B('')} data-return-explore>
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Görsel keşfe dön
+        </a>
+        <button type="button" class="btn btn-primary btn-sm hide-mobile" data-open-appointment>Randevu talep et</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="icerik">
+    <!-- Giriş -->
+    <section class="hero on-dark" aria-labelledby="hero-title">
+      <img class="hero-img" src={hero.large} srcset={`${hero.small} ${hero.smallW}w, ${hero.large} ${hero.largeW}w`} sizes="100vw" width={hero.w} height={hero.h} alt={hero.alt} fetchpriority="high" />
+      <div class="wrap hero-inner">
+        <p class="eyebrow">Vertisa · İncek / Ankara</p>
+        <h1 id="hero-title">İncek Premium</h1>
+        <p class="hero-lead">Tek bloklu, 30 katlı kulede 300 konut. Açık ve kapalı mutfaklı iki farklı 2+1 daire tipi.</p>
+        <div class="hero-actions">
+          <a class="btn btn-gold" href={B('?s=bina')}>Görsel keşfe başla</a>
+          <button type="button" class="btn btn-ghost-dark" data-open-appointment>Randevu talep et</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Proje -->
+    <section id="proje" class="section" aria-labelledby="proje-title">
+      <div class="wrap">
+        <p class="eyebrow">Proje hakkında</p>
+        <h2 id="proje-title">Doğayla çevrili, şehre yakın bir kule</h2>
+        <dl class="facts">
+          {project.facts.map((f) => <div class="fact"><dt>{f.label}</dt><dd>{f.value}</dd></div>)}
+        </dl>
+        <div class="two-col">
+          <div class="prose">
+            {project.about.map((p) => <p>{p}</p>)}
+          </div>
+          <aside class="schedule" aria-labelledby="takvim-title">
+            <h3 id="takvim-title">Duyurulan proje takvimi</h3>
+            <dl>
+              <div><dt>Başlangıç</dt><dd>{project.schedule.start}</dd></div>
+              <div><dt>Teslim (duyurulan)</dt><dd>{project.schedule.delivery}</dd></div>
+            </dl>
+            <p class="fine">{project.schedule.note}</p>
+          </aside>
+        </div>
+        <ul class="highlights">
+          {project.highlights.map((h) => <li><h3>{h.title}</h3><p>{h.text}</p></li>)}
+        </ul>
+        <p class="fine source">Kaynak: <a href={project.officialSite + 'proje-hakkinda'} rel="noopener" target="_blank">incekpremium.com/proje-hakkinda</a> · Kontrol tarihi {project.checkedAt}</p>
+      </div>
+    </section>
+
+    <!-- Daire tipleri -->
+    <section id="daire-tipleri" class="section section-cream" aria-labelledby="tipler-title">
+      <div class="wrap">
+        <p class="eyebrow">Daire tipleri</p>
+        <h2 id="tipler-title">İki farklı 2+1: açık ve kapalı mutfak</h2>
+        <p class="lead">Resmî bilgilere göre projede iki 2+1 daire tipi bulunuyor. Fark, mutfağın salonla ilişkisinde. Net/brüt alanlar ve kat bazlı dağılım bu sitede yer almaz; güncel bilgi için satış ekibiyle görüşün.</p>
+        <div class="types">
+          {apartmentTypes.map((t) => {
+            const cover = img(typeCover[t.id]);
+            const kitchen = img(typeKitchen[t.id]);
+            return (
+              <article class="type" aria-labelledby={`type-${t.id}`}>
+                <div class="type-media">
+                  <img src={cover.small} width={cover.w} height={cover.h} alt={cover.alt} loading="lazy" decoding="async" />
+                  <img src={kitchen.small} width={kitchen.w} height={kitchen.h} alt={kitchen.alt} loading="lazy" decoding="async" />
+                </div>
+                <div class="type-body">
+                  <p class="tag">{t.short}</p>
+                  <h3 id={`type-${t.id}`}>{t.title}</h3>
+                  <p>{t.summary}</p>
+                  <p class="kitchen-note">{t.kitchenNote}</p>
+                  <ul class="room-tags"><li>Salon</li><li>Mutfak</li><li>Ebeveyn odası</li><li>İkinci oda</li><li>Banyo</li></ul>
+                  <a class="btn btn-primary btn-sm" href={B(`?s=daire&tip=${t.id}&oda=salon`)}>Bu tipi görsel olarak keşfet</a>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+        <p class="fine">İkinci odanın kullanımı resmî olarak belirtilmemiştir; görsellerde çok amaçlı / çalışma odası örneği gösterilir.</p>
+      </div>
+    </section>
+
+    <!-- Oda şemaları -->
+    <section id="kat-planlari" class="section" aria-labelledby="plan-title">
+      <div class="wrap">
+        <p class="eyebrow">Kat planları</p>
+        <h2 id="plan-title">Temsili oda şemaları</h2>
+        <div class="notice" role="note">
+          <strong>Doğrulanmış mimari kat planı bu sürümde bulunmuyor.</strong> Aşağıdaki şemalar yalnızca odalar arasında gezinmeye yardımcı olmak için hazırlanmıştır; ölçü, alan, yön veya gerçek oda yerleşimi bilgisi vermez. Resmî galerideki vaziyet görseli bir yerleşim görselidir, kat planı değildir.
+        </div>
+        <div class="schemes">
+          {apartmentTypes.map((t) => (
+            <div class="scheme-card">
+              <h3>{t.title}</h3>
+              <RoomScheme type={t} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- Olanaklar -->
+    <section id="olanaklar" class="section section-green on-dark" aria-labelledby="olanak-title">
+      <div class="wrap">
+        <p class="eyebrow">Sosyal olanaklar ve hizmetler</p>
+        <h2 id="olanak-title">Projede planlanan ayrıcalıklar</h2>
+        <p class="lead">Resmî “Ayrıcalıklar” sayfasında listelenen hizmetler. Proje inşa sürecinde olduğundan bunlar sunulması planlanan olanaklardır; ücret, çalışma saati ve kapasite bilgisi bu sitede yer almaz.</p>
+        <ul class="amenities">
+          {officialPrivileges.map((id) => {
+            const it = (amenityItems as any)[id];
+            const im = img(it.asset);
+            const g = groupOf(id);
+            return (
+              <li class="amenity">
+                <img src={im.small} width={im.w} height={im.h} alt={im.alt} loading="lazy" decoding="async" />
+                <div class="amenity-body">
+                  <h3>{it.title}</h3>
+                  <p>{it.text}</p>
+                  {g && <a class="amenity-link" href={B(`?s=olanak&grup=${g.id}&oge=${id}`)}>Görsel keşifte aç</a>}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+        <p class="fine source">Hizmet görselleri resmî sitedeki temsilî görsellerdir. Kaynak: <a href={project.officialSite + 'ayricaliklar'} rel="noopener" target="_blank">incekpremium.com/ayricaliklar</a></p>
+      </div>
+    </section>
+
+    <!-- Galeri -->
+    <section id="galeri" class="section" aria-labelledby="galeri-title">
+      <div class="wrap">
+        <p class="eyebrow">Galeri</p>
+        <h2 id="galeri-title">Resmî proje görselleri</h2>
+        <div class="filters" role="group" aria-label="Galeri filtresi" data-gallery-filters hidden>
+          <button type="button" class="filter" aria-pressed="true" data-filter="all">Tümü</button>
+          {galleryCategories.map((c) => <button type="button" class="filter" aria-pressed="false" data-filter={c.id}>{c.label}</button>)}
+        </div>
+        <ul class="gallery" data-gallery>
+          {galleryItems.map((g, i) => {
+            const im = img(g.asset);
+            return (
+              <li class="g-item" data-cat={g.cat}>
+                <a href={im.large} data-lightbox data-index={i} data-full={im.large} data-caption={g.caption} data-alt={im.alt}>
+                  <img src={im.small} width={im.w} height={im.h} alt={im.alt} loading="lazy" decoding="async" />
+                  <span class="g-cap">{g.caption}</span>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+        <p class="fine source">Görseller resmî sitenin galerisinden alınıp optimize edilmiştir. Fiyat veya kampanya içeren görseller kullanılmamıştır.</p>
+      </div>
+    </section>
+
+    <!-- Konum -->
+    <section id="konum" class="section section-cream" aria-labelledby="konum-title">
+      <div class="wrap two-col">
+        <div>
+          <p class="eyebrow">Konum</p>
+          <h2 id="konum-title">İncek – Gölbaşı Taşpınar</h2>
+          <address class="address">{project.contact.address}</address>
+          <p><a class="btn btn-primary btn-sm" href={project.contact.mapsUrl} target="_blank" rel="noopener">Haritada aç (Google Haritalar)</a></p>
+          <h3 class="h-small">Resmî metinde yakınlığı vurgulanan noktalar</h3>
+          <ul class="nearby">{project.nearby.map((n) => <li>{n}</li>)}</ul>
+          <p class="fine">Mesafe ve yolculuk süreleri bu sitede verilmez; güncel ulaşım bilgisi için harita bağlantısını kullanın.</p>
+        </div>
+        <figure class="loc-fig">
+          {(() => { const im = img('vaziyet', 'large'); return <img src={im.large} width={im.w} height={im.h} alt={im.alt} loading="lazy" decoding="async" />; })()}
+          <figcaption class="fine">Resmî vaziyet görseli: arsadaki yerleşimin kuşbakışı görünümü. Mimari kat planı değildir.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- İletişim -->
+    <section id="iletisim" class="section" aria-labelledby="iletisim-title">
+      <div class="wrap two-col">
+        <div>
+          <p class="eyebrow">İletişim</p>
+          <h2 id="iletisim-title">Ziyaret planlayın</h2>
+          <p>Satış ofisini ziyaret etmek için tercih ettiğiniz tarih ve saat aralığıyla WhatsApp üzerinden talep oluşturabilirsiniz. Mesajı WhatsApp’ta siz gönderirsiniz; randevu uygunluğu satış ekibi tarafından teyit edilir.</p>
+          <button type="button" class="btn btn-primary" data-open-appointment>WhatsApp ile randevu talep et</button>
+        </div>
+        <ul class="contact-list">
+          <li><span>Telefon</span><a href={project.contact.phoneHref}>{project.contact.phoneDisplay}</a></li>
+          <li><span>WhatsApp</span><a href={project.contact.whatsappBase} target="_blank" rel="noopener">{project.contact.mobileDisplay}</a></li>
+          <li><span>E-posta</span><a href={`mailto:${project.contact.email}`}>{project.contact.email}</a></li>
+          <li><span>Adres</span><address>{project.contact.address}</address></li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-foot on-dark">
+    <div class="wrap foot-inner">
+      <div class="foot-brand">
+        <img src={B('brand/incek-premium-logo.png')} alt="İncek Premium" width="427" height="551" />
+        <img src={B('brand/vertisa-logo.png')} alt="Vertisa" width="500" height="47" class="foot-vertisa" />
+      </div>
+      <div>
+        <p>{project.disclaimer}</p>
+        <p class="fine">Bilgiler {project.checkedAt} tarihinde <a href={project.officialSite} target="_blank" rel="noopener">incekpremium.com</a> üzerinden kontrol edilmiştir. Kat seçimi temsili eşleştirmedir; örnek daireler kesin envanter değildir.</p>
+        <p><a class="btn btn-light btn-sm" href={B('')} data-return-explore>Görsel keşfe dön</a></p>
+      </div>
+    </div>
+  </footer>
+
+  <button type="button" class="mobile-appt btn btn-primary" data-open-appointment>Randevu talep et</button>
+
+  <dialog class="lightbox" id="lightbox" aria-label="Görsel önizleme">
+    <figure class="lb-fig">
+      <img class="lb-img" alt="" />
+      <figcaption class="lb-cap" aria-live="polite"></figcaption>
+    </figure>
+    <button type="button" class="lb-btn lb-prev" aria-label="Önceki görsel"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <button type="button" class="lb-btn lb-next" aria-label="Sonraki görsel"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <button type="button" class="lb-btn lb-close" aria-label="Kapat"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+  </dialog>
+
+  <AppointmentDialog />
+  <script>
+    import { initInfo } from '../../scripts/info.js';
+    initInfo();
+  </script>
+</Base>

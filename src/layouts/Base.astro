@@ -1,0 +1,35 @@
+---
+import '@fontsource/plus-jakarta-sans/400.css';
+import '@fontsource/plus-jakarta-sans/600.css';
+import '@fontsource/plus-jakarta-sans/700.css';
+import '@fontsource/cal-sans/400.css';
+import '../styles/global.css';
+import { NOINDEX, LANG, SITE_TITLE, SITE_DESCRIPTION } from '../config.js';
+import { withBase } from '../lib/url.js';
+
+interface Props { title?: string; description?: string; bodyClass?: string; preload?: { href: string; as: string; type?: string; media?: string }[] }
+const { title = SITE_TITLE, description = SITE_DESCRIPTION, bodyClass = '', preload = [] } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site).toString();
+---
+<!doctype html>
+<html lang={LANG}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    {NOINDEX && <meta name="robots" content="noindex, nofollow" />}
+    <meta name="theme-color" content="#0b533d" />
+    <link rel="icon" type="image/png" href={withBase('favicon.png')} />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="tr_TR" />
+    {preload.map((p) => <link rel="preload" href={p.href} as={p.as} type={p.type} media={p.media} fetchpriority="high" />)}
+    <slot name="head" />
+  </head>
+  <body class={bodyClass}>
+    <slot />
+  </body>
+</html>
